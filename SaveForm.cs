@@ -17,24 +17,14 @@ namespace TreasuresSoC
         List<string> info;
         Form1 parent;
 
-        public SaveForm(List<string> files, List<string> info, Form1 parent, string currLang)
+        public SaveForm(List<string> files, List<string> info, Form1 parent)
         {
             this.files = files;
             this.info = info;
             this.parent = parent;
 
             InitializeComponent();
-
-            if(currLang == "RUS")
-            {
-                infoMessageLabel.Text = "Следующие файлы будут перезаписаны:\n";
-            }
-            else
-            {
-                infoMessageLabel.Text = "The following files will be overwritten:\n";
-                cancelButton.Text = "Cancel";
-                this.Text = "Save";
-            }
+            infoMessageLabel.Text = "Следующие файлы будут перезаписаны:\n";
 
             foreach (string file in files)
             {

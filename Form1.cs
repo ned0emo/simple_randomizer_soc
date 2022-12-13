@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TreasuresSoC
@@ -26,7 +21,7 @@ namespace TreasuresSoC
             "wound_immunity", "radiation_immunity", "telepatic_immunity", "chemical_burn_immunity",
             "explosion_immunity", "fire_wound_immunity"};
         //список имен файлов
-        string[] nameList = {"addon", "af", "ammo", "item", "model", "monItem",
+        string[] nameList = {"other", "af", "ammo", "item", "model",
             "outfit", "sound", "weapon", "npcexception", "community"};
 
         List<string> errList;
@@ -36,8 +31,6 @@ namespace TreasuresSoC
         List<Label> recommendLabelList;
 
         Random rnd;
-
-        Language lang;
 
         public bool isSaved = false;
 
@@ -49,10 +42,8 @@ namespace TreasuresSoC
 
             InitializeComponent();
 
-            changeLanguage("RUS");
-
-            textBoxList = new List<TextBox>() { addonTextBox, afTextBox, ammoTextBox, itemTextBox,
-                modelTextBox, monsterTextBox, armorTextBox, soundTextBox, weaponTextBox,
+            textBoxList = new List<TextBox>() { otherTextBox, afTextBox, ammoTextBox, itemTextBox,
+                modelTextBox, armorTextBox, soundTextBox, weaponTextBox,
                 npcExecptTextBox, communityTextBox};
 
             generateTypeCheckBoxList = new List<CheckBox>() { treasureCheckBox, afCheckBox,
@@ -86,7 +77,7 @@ namespace TreasuresSoC
                 return;
             }
 
-            SaveForm form = new SaveForm(files, info, this, lang.currLang);
+            SaveForm form = new SaveForm(files, info, this);
             form.ShowDialog();
 
             if (isSaved)
@@ -135,9 +126,9 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.gamedataError)).ShowDialog();
+                (new ErrForm("Ошибка создания директории gamedata. Проверьте права доступа на запись. Операция прервана.")).ShowDialog();
                 return;
-            }            
+            }
             //тайники
             try
             {
@@ -146,17 +137,36 @@ namespace TreasuresSoC
                     List<string> outfitList = new List<string>(armorTextBox.Text.Replace("\r", "").Split('\n'));
                     List<string> afList = new List<string>(afTextBox.Text.Replace("\r", "").Split('\n'));
                     List<string> itemList = new List<string>(itemTextBox.Text.Replace("\r", "").Split('\n'));
-                    List<string> monItemList = new List<string>(monsterTextBox.Text.Replace("\r", "").Split('\n'));
-                    List<string> addonList = new List<string>(addonTextBox.Text.Replace("\r", "").Split('\n'));
+                    List<string> otherList = new List<string>(otherTextBox.Text.Replace("\r", "").Split('\n'));
                     List<string> weaponList = new List<string>(weaponTextBox.Text.Replace("\r", "").Split('\n'));
                     List<string> ammoList = new List<string>(ammoTextBox.Text.Replace("\r", "").Split('\n'));
+                    List<string> brokenWeapons = new List<string>();
 
                     StreamReader treasureReader = new StreamReader($"{originalConfPath}/misc/treasure_manager.ltx");
                     List<string> treasureStringList = new List<string>(treasureReader.ReadToEnd().Split('\n'));
 
                     for (int i = 0; i < weaponList.Count; i++)
                     {
+                        if (!weaponList[i].Contains(" "))
+                        {
+                            brokenWeapons.Add(weaponList[i]);
+                            continue;
+                        }
+
                         weaponList[i] = weaponList[i].Substring(0, weaponList[i].IndexOf(' '));
+                    }
+
+                    if (brokenWeapons.Count > 0)
+                    {
+                        string brokenWeaponString = "";
+                        foreach (string weapon in brokenWeapons)
+                        {
+                            brokenWeaponString += weapon + " ||| ";
+                        }
+                        (new ErrForm($"Некоторые оружия не были добавлены в тайники " +
+                            $"из-за неправильного форматирования. " +
+                            $"Рекомендуется проверить форматирование всего списка оружия. " +
+                            $"Обнаруженные проблемы:\n{brokenWeaponString}")).ShowDialog();
                     }
 
                     for (int j = 0; j < treasureStringList.Count; j++)
@@ -168,35 +178,31 @@ namespace TreasuresSoC
 
                             for (int i = 0; i < itemCount; i++)
                             {
-                                int whichItemType = rnd.Next(1, 100);
+                                int whichItemType = rnd.Next(100);
 
-                                if (whichItemType < 11)
+                                if (whichItemType < 10)
                                 {
                                     newItems += generateItem(outfitList, 1);
                                 }
-                                else if (whichItemType < 26)
+                                else if (whichItemType < 25)
                                 {
                                     newItems += generateItem(weaponList, 1);
                                 }
-                                else if (whichItemType < 36)
+                                else if (whichItemType < 35)
                                 {
                                     newItems += generateItem(afList, 3);
                                 }
-                                else if (whichItemType < 66)
+                                else if (whichItemType < 65)
                                 {
                                     newItems += generateItem(itemList, 8);
                                 }
-                                else if (whichItemType < 91)
+                                else if (whichItemType < 90)
                                 {
                                     newItems += generateItem(ammoList, 6);
                                 }
-                                else if (whichItemType < 96)
-                                {
-                                    newItems += generateItem(addonList, 2);
-                                }
                                 else
                                 {
-                                    newItems += generateItem(monItemList, 3);
+                                    newItems += generateItem(otherList, 2);
                                 }
 
                                 if (i < itemCount - 1)
@@ -225,7 +231,7 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.treasureError)).ShowDialog();
+                (new ErrForm("Ошибка генерации тайников. Операция прервана.")).ShowDialog();
                 return;
             }
             //артефакты
@@ -246,6 +252,7 @@ namespace TreasuresSoC
                         artefactsStringList[i] = replaceStat(artefactsStringList[i], "cost", rnd.Next(1000, 3001) * multiplier(30, 3));
                         artefactsStringList[i] = replaceStat(artefactsStringList[i], "inv_weight", (rnd.NextDouble() + 0.3) * multiplier(20, 3));
 
+                        //Замена статов на пустые для последующего добавления новых
                         foreach (string stat in fullAfStats)
                         {
                             artefactsStringList[i] = replaceStat(artefactsStringList[i], stat, 1.0);
@@ -274,7 +281,7 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.afError)).ShowDialog();
+                (new ErrForm("ошибка генерации характеристик артефактов. Операция прервана.")).ShowDialog();
                 return;
             }
             //оружие
@@ -302,19 +309,7 @@ namespace TreasuresSoC
                         currWeapon =
                             replaceStat(currWeapon, "inv_weight", Math.Round(rnd.NextDouble() * 5 * multiplier(30, 2) + 0.2, 2));
                         currWeapon =
-                            replaceStat(currWeapon, "fire_dispersion_base", Math.Round(rnd.NextDouble() * 0.25 * multiplier(50, 2) + 0.01, 2));
-                        /*currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_relax_speed", Math.Round(rnd.NextDouble() * 8 + 1, 1));
-                        currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_dispersion", Math.Round(rnd.NextDouble() * 2 * multiplier(20, 3) + 0.05, 3));
-                        currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_dispersion_inc", Math.Round(rnd.NextDouble() * 2, 3));
-                        currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_dispertion_frac", Math.Round(rnd.NextDouble() + 0.5, 1));
-                        currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_max_angle", rnd.Next(5, 121));
-                        currWeapon =
-                            replaceWeaponStat(currWeapon, "cam_max_angle_horz", rnd.Next(0, 51));*/
+                            replaceStat(currWeapon, "fire_dispersion_base", Math.Round(rnd.NextDouble() * 0.75 * multiplier(50, 2) + 0.01, 2));
                         currWeapon =
                             replaceStat(currWeapon, "misfire_probability", Math.Round(rnd.NextDouble() * 0.01 + 0.001, 3));
                         currWeapon =
@@ -326,9 +321,9 @@ namespace TreasuresSoC
                         currWeapon =
                             replaceStat(currWeapon, "fire_distance", rnd.Next(1, 1001));
                         currWeapon =
-                            replaceStat(currWeapon, "bullet_speed", rnd.Next(50, 1001) * multiplier(20, 3));
+                            replaceStat(currWeapon, "bullet_speed", rnd.Next(10, 1001) * multiplier(20, 3));
                         currWeapon =
-                            replaceStat(currWeapon, "rpm", rnd.Next(10, 1001));
+                            replaceStat(currWeapon, "rpm", rnd.Next(1, 1001));
                         currWeapon =
                             replaceStat(currWeapon, "silencer_hit_power", Math.Round(rnd.NextDouble() * multiplier(5, 30) + 0.01, 2));
                         currWeapon =
@@ -336,7 +331,7 @@ namespace TreasuresSoC
                         currWeapon =
                             replaceStat(currWeapon, "silencer_fire_distance", rnd.Next(1, 1001));
                         currWeapon =
-                            replaceStat(currWeapon, "silencer_bullet_speed", rnd.Next(50, 1001) * multiplier(20, 3));
+                            replaceStat(currWeapon, "silencer_bullet_speed", rnd.Next(1, 1001) * multiplier(20, 3));
 
                         byte[] buffer = Encoding.Default.GetBytes(currWeapon);
 
@@ -349,7 +344,7 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.weaponError)).ShowDialog();
+                (new ErrForm("Ошбка генерации характеристик оружия. Операция прервана.")).ShowDialog();
                 return;
             }
             //бронь
@@ -414,7 +409,7 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.outfitError)).ShowDialog();
+                (new ErrForm("Ошибка генерации характеристик брони. Операция прервана.")).ShowDialog();
                 return;
             }
             //нпс
@@ -435,7 +430,7 @@ namespace TreasuresSoC
                         {
                             bool isException = false;
 
-                            foreach(string except in exceptionList)
+                            foreach (string except in exceptionList)
                             {
                                 if (npcDescList[i].Contains(except))
                                 {
@@ -449,21 +444,11 @@ namespace TreasuresSoC
                                 continue;
                             }
 
-                            /*if (npcDescList[i].Contains("<name>"))
-                            {
-                                string name = generateName();
-                                string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<name>"));
-                                npcDescList[i] = npcDescList[i].Replace(tmp.Substring(0, tmp.IndexOf('\n')), $"<name>{name}</name>");
-                            }*/
-
                             if (npcDescList[i].Contains("<community>") && communityCheckBox.Checked)
                             {
                                 List<string> communityList = new List<string>(communityTextBox.Text.Replace("\r", "").Split('\n'));
                                 string community = communityList[rnd.Next(communityList.Count)];
                                 string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<community>"));
-                                //string terrSect = "";
-
-                                //if(npcDescList)
 
                                 npcDescList[i] = npcDescList[i].Replace(tmp.Substring(0, tmp.IndexOf("</comm") + 12), $"<community>{community}</community>");
                             }
@@ -472,7 +457,7 @@ namespace TreasuresSoC
                             {
                                 string[] models = modelTextBox.Text.Replace("\r", "").Split('\n');
                                 string model = models[rnd.Next(models.Length)];
-                                string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<visual>"));// [npcDescList[i].IndexOf("<visual>")..];
+                                string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<visual>"));
                                 npcDescList[i] = npcDescList[i].Replace(tmp.Substring(0, tmp.IndexOf('\n')), $"<visual>{model}</visual>");
                             }
 
@@ -480,7 +465,7 @@ namespace TreasuresSoC
                             {
                                 string[] sounds = soundTextBox.Text.Replace("\r", "").Split('\n');
                                 string sound = sounds[rnd.Next(sounds.Length)];
-                                string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<snd_config>"));// [npcDescList[i].IndexOf("<snd_config>")..];
+                                string tmp = npcDescList[i].Substring(npcDescList[i].IndexOf("<snd_config>"));
                                 npcDescList[i] = npcDescList[i].Replace(tmp.Substring(0, tmp.IndexOf('\n')), $"<snd_config>{sound}</snd_config>");
                             }
 
@@ -533,7 +518,7 @@ namespace TreasuresSoC
             }
             catch
             {
-                (new ErrForm(lang.npcError)).ShowDialog();
+                (new ErrForm("Ошибка генераци НПС. Операция прервана.")).ShowDialog();
                 return;
             }
 
@@ -587,26 +572,31 @@ namespace TreasuresSoC
                     message = translateCheckBox.Text;
                     Directory.CreateDirectory($"{newGamedataPath}/config/text/rus");
 
-                    foreach(string file in Directory.GetFiles(oldPath))
+                    foreach (string file in Directory.GetFiles(oldPath))
                     {
-                        File.Copy(file, newPath + file.Substring(file.LastIndexOf('/')));
+                        string tmpFile = file.Replace('\\', '/');
+                        File.Copy(tmpFile, newPath + tmpFile.Substring(tmpFile.LastIndexOf('/')));
                     }
                 }
             }
             catch
             {
-                (new ErrForm(lang.extraError + $"\n({message})")).ShowDialog();
+                (new ErrForm("Ошибка при копировании дополнителных настроек. Операция прервана." + $"\n({message})")).ShowDialog();
                 return;
             }
 
-            (new OkForm(lang.saveNoError)).ShowDialog();
+            (new  ErrForm("Сохранено")).ShowDialog();
         }
 
+        //загрузка списков по умолчанию
         private void loadDefaultButton_Click(object sender, EventArgs e)
         {
             loadLists(true);
         }
 
+        //заполнения текстовых полей
+        //type, а не fileName, потому что при загрузке дефолтных списокв
+        //добавляется слово default/
         private void fillTextBox(string type, TextBox textBox)
         {
             try
@@ -622,19 +612,21 @@ namespace TreasuresSoC
             }
         }
 
+        //загрузка списков редактируемых или дефолтных
         private void loadLists(bool isDefault)
         {
             errList.Clear();
 
             if (isDefault)
             {
+                //дефолтным не нужно перезаполнять список loadedDataList
+                //чтоб оставались отличия от кеша для проверки на необходимость сохранения
                 fillTextBox("default/community", communityTextBox);
-                fillTextBox("default/addon", addonTextBox);
+                fillTextBox("default/other", otherTextBox);
                 fillTextBox("default/af", afTextBox);
                 fillTextBox("default/ammo", ammoTextBox);
                 fillTextBox("default/item", itemTextBox);
                 fillTextBox("default/model", modelTextBox);
-                fillTextBox("default/monItem", monsterTextBox);
                 fillTextBox("default/outfit", armorTextBox);
                 fillTextBox("default/sound", soundTextBox);
                 fillTextBox("default/weapon", weaponTextBox);
@@ -645,12 +637,11 @@ namespace TreasuresSoC
                 loadedDataList.Clear();
 
                 fillTextBox("community", communityTextBox);
-                fillTextBox("addon", addonTextBox);
+                fillTextBox("other", otherTextBox);
                 fillTextBox("af", afTextBox);
                 fillTextBox("ammo", ammoTextBox);
                 fillTextBox("item", itemTextBox);
                 fillTextBox("model", modelTextBox);
-                fillTextBox("monItem", monsterTextBox);
                 fillTextBox("outfit", armorTextBox);
                 fillTextBox("sound", soundTextBox);
                 fillTextBox("weapon", weaponTextBox);
@@ -664,8 +655,7 @@ namespace TreasuresSoC
 
             if (errList.Count > 0)
             {
-                string errMessage = "The following files could not be loaded\n" 
-                    + "Не удалось загрузить следующие файлы:\n\n";
+                string errMessage = "Не удалось загрузить следующие файлы:\n\n";
 
                 foreach (string file in errList)
                 {
@@ -677,6 +667,7 @@ namespace TreasuresSoC
             }
         }
 
+        //загрузка списков при старте приложения
         private void Form1_Shown(object sender, EventArgs e)
         {
             loadLists(false);
@@ -692,6 +683,7 @@ namespace TreasuresSoC
             }
         }
 
+        //Предмет и количество для добавления в тайник
         private string generateItem(List<string> itemList, int maxItemCount)
         {
             int itemPackCount = 1;
@@ -699,7 +691,8 @@ namespace TreasuresSoC
 
             if (item.Contains(" "))
             {
-                try {
+                try
+                {
                     itemPackCount = Convert.ToInt32(item.Split(' ')[1]);
                 }
                 catch
@@ -713,30 +706,31 @@ namespace TreasuresSoC
             return item + ", " + count;
         }
 
+        //замена целочисленного стата файла
         string replaceStat(string item, string statName, int statValue)
         {
             if (item.Contains(statName))
             {
-                string tmp = item.Substring(item.IndexOf(statName));// [item.IndexOf(statName)..];
-                return item.Replace(tmp.Substring(0, tmp.IndexOf('\n')),// [..tmp.IndexOf('\n')],
-                    statName + " = " + statValue);
+                string tmp = item.Substring(item.IndexOf(statName));
+                return item.Replace(tmp.Substring(0, tmp.IndexOf('\n')), statName + " = " + statValue);
             }
 
             return item;
         }
 
+        //замена дробного стата файла
         string replaceStat(string item, string statName, double statValue)
         {
             if (item.Contains(statName))
             {
-                string tmp = item.Substring(item.IndexOf(statName));// [item.IndexOf(statName)..];
-                return item.Replace(tmp.Substring(0, tmp.IndexOf('\n')),// [..tmp.IndexOf('\n')],
-                    statName + " = " + statValue);
+                string tmp = item.Substring(item.IndexOf(statName));
+                return item.Replace(tmp.Substring(0, tmp.IndexOf('\n')), statName + " = " + statValue);
             }
 
             return item;
         }
 
+        //генерация статов артов
         List<Tuple<string, double>> generateAfStats(int statsNum)
         {
             List<string> statsList = new List<string>(fullAfStats);
@@ -777,9 +771,10 @@ namespace TreasuresSoC
             return tmpString;
         }
 
-        int multiplier(int p, int multValue)
+        //дополнительный множитель
+        int multiplier(int probability, int multValue)
         {
-            if (rnd.Next(100) < p)
+            if (rnd.Next(100) < probability)
             {
                 return multValue;
             }
@@ -787,218 +782,28 @@ namespace TreasuresSoC
             return 1;
         }
 
+        //надпись "рекомендуется" при активации рандома группировок
         private void communityCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            foreach(Label label in recommendLabelList)
+            foreach (Label label in recommendLabelList)
             {
                 label.Visible = communityCheckBox.Checked;
             }
         }
 
-        private void scanButton_Click(object sender, EventArgs e)
+        private void weaponGuideButton_Click(object sender, EventArgs e)
         {
-            (new OkForm("Выберите папку gamedata, которую желаете сканировать.\n" +
-                "После сканирования рекомендуется вручную проверить списки" +
-                " на наличие в них вырезанных или специфических и ошибочно добавленных предметов," +
-                " которые могут привести к вылету игры после генерации новой gamedata."))
-                .ShowDialog();
-            
-            FolderBrowserDialog fbd = new FolderBrowserDialog();
-            
-            if(fbd.ShowDialog() != DialogResult.OK)
-            {
-                return;
-            }
-
-            string gamedataScanPath = fbd.SelectedPath;
-
-            List<string> itemList = new List<string>();
-            List<string> afList = new List<string>();
-            List<string> monItemList = new List<string>();
-            List<string> outfitList = new List<string>();
-            List<string> ammoList = new List<string>();
-            List<string> weaponAmmoList = new List<string>();
-            List<string> soundList = new List<string>();
-            List<string> modelList = new List<string>();
-
-            bool isNeedAbort = true;
-            string[] dirList = Directory.GetDirectories(gamedataScanPath);
-
-            foreach(string dir in dirList)
-            {
-                if (dir.Contains("config"))
-                {
-
-                }
-            }
+            new GuideForm(0).ShowDialog();
         }
 
-        string generateName()
+        private void itemGuideButton_Click(object sender, EventArgs e)
         {
-            bool isBelongsTo(char letter, string letters)
-            {
-                foreach (char ch in letters)
-                {
-                    if (letter == ch)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            char chooseLetter(string letters)
-            {
-                return letters[rnd.Next(letters.Length)];
-            }
-
-            int nameLength = rnd.Next(3, 10);
-            int nextConsonantProb = 10;
-
-            string tmpName = "";
-            string name = "";
-            string capitalLetters = "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ";
-            string consonant = "бвгджзклмнпрстфхцчшщ";
-            string vowel = "аеиоуыэюя";
-            string allconsonant = "бвгджзклмнпрстфхцчшщБВГДЖЗКЛМНПРСТФХЦЧШЩ";
-            string wtf = "ьъ";
-            string[] famLast = { "ов", "ев", "ий", "ин", "ко", "в" };
-
-            for (int j = 0; j < 2; j++)
-            {
-                for (int i = 0; i < nameLength; i++)
-                {
-                    if (tmpName.Length < 1)
-                    {
-                        tmpName += capitalLetters[rnd.Next(capitalLetters.Length)];
-                    }
-                    else if (isBelongsTo(tmpName[i - 1], allconsonant))
-                    {
-                        if (rnd.Next(100) < nextConsonantProb)
-                        {
-                            tmpName += chooseLetter(consonant);
-                            nextConsonantProb /= 2;
-                        }
-                        else
-                        {
-                            if (rnd.Next(100) < 4)
-                            {
-                                tmpName += chooseLetter(wtf);
-                            }
-                            else
-                            {
-                                tmpName += chooseLetter(vowel);
-                            }
-
-                            nextConsonantProb = 10;
-                        }
-                    }
-                    else if (isBelongsTo(tmpName[i - 1], wtf))
-                    {
-                        if (rnd.Next(2) < 1)
-                        {
-                            tmpName += chooseLetter(consonant);
-                        }
-                        else
-                        {
-                            tmpName += chooseLetter(vowel);
-                        }
-                    }
-                    else
-                    {
-                        tmpName += chooseLetter(consonant);
-                    }
-                }
-
-                if (j == 0)
-                {
-                    name = tmpName + " ";
-                    tmpName = "";
-                    nameLength = rnd.Next(3, 10);
-                }
-                else
-                {
-                    if (isBelongsTo(tmpName[tmpName.Length - 1], vowel))
-                    {
-                        tmpName += famLast[rnd.Next(2) + 4];
-                    }
-                    else
-                    {
-                        tmpName += famLast[rnd.Next(5)];
-                    }
-
-                    name += tmpName;
-                }
-            }
-
-            return name;
+            new GuideForm(1).ShowDialog();
         }
 
-        private void changeLanguage(string currLang)
-        {         
-            lang = new Language(currLang);
-
-            this.Text = lang.programName;
-
-            tabPage1.Text = lang.weaponTabString;
-            tabPage2.Text = lang.outfitTabString;
-            tabPage3.Text = lang.afTabString;
-            tabPage4.Text = lang.addonTabString;
-            tabPage5.Text = lang.ammoTabString;
-            tabPage6.Text = lang.itemsTabString;
-            tabPage7.Text = lang.monsterTabString;
-            tabPage8.Text = lang.extraTabString;
-            tabPage9.Text = lang.npcTabString;
-
-            label1.Text = lang.weaponListString;
-            label10.Text = lang.ammoListString;
-            label2.Text = lang.modelListString;
-            label3.Text = lang.soundListString;
-            label4.Text = lang.exceptionListString;
-            label5.Text = lang.communityListString;
-
-            label6.Text = lang.descriptionString;
-            respawnCheckBox.Text = lang.respawnString;
-            translateCheckBox.Text = lang.translationString;
-            communityCheckBox.Text = lang.communityString;
-            equipWeaponEverywhereCheckBox.Text = lang.weaponInBarString;
-            barAlarmCheckBox.Text = lang.alarmString;
-            giveKnifeCheckBox.Text = lang.knifeString;
-            disableFreedomAngryCheckBox.Text = lang.freedomString;
-            recommendLabel1.Text = lang.recommendString;
-            recommendLabel2.Text = lang.recommendString;
-            recommendLabel3.Text = lang.recommendString;
-            recommendLabel4.Text = lang.recommendString;
-
-            allCheckBox.Text = lang.allButtonString;
-            treasureCheckBox.Text = lang.treasureButtonString;
-            afCheckBox.Text = lang.afButtonString;
-            weaponCheckBox.Text = lang.weaponButtonString;
-            armorCheckBox.Text = lang.outfitButtonString;
-            npcCheckBox.Text = lang.npcButtonString;
-
-            generateButton.Text = lang.generateButtonString;
-            saveButton.Text = lang.saveButtonString;
-            loadButton.Text = lang.loadButtonString;
-            loadDefaultButton.Text = lang.defaultButtonString;
-
-        }
-
-        private void rusRadioButton_CheckedChanged(object sender, EventArgs e)
+        private void npcGuideButton_Click(object sender, EventArgs e)
         {
-            if (rusRadioButton.Checked)
-            {
-                changeLanguage("RUS");
-            }
-        }
-
-        private void engRadioButton_CheckedChanged(object sender, EventArgs e)
-        {
-            if (engRadioButton.Checked)
-            {
-                changeLanguage("ENG");
-            }
+            new GuideForm(2).ShowDialog();
         }
     }
 }

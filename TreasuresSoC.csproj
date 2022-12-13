@@ -46,13 +46,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Language.cs" />
-    <Compile Include="OkForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="OkForm.Designer.cs">
-      <DependentUpon>OkForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="ErrForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -65,6 +58,12 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="GuideForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GuideForm.Designer.cs">
+      <DependentUpon>GuideForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaveForm.cs">
@@ -73,14 +72,15 @@
     <Compile Include="SaveForm.Designer.cs">
       <DependentUpon>SaveForm.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="OkForm.resx">
-      <DependentUpon>OkForm.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="ErrForm.resx">
       <DependentUpon>ErrForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GuideForm.resx">
+      <DependentUpon>GuideForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
